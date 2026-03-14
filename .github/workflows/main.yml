@@ -1,0 +1,72 @@
+trigger:
+- main
+
+variables:
+  imageName: employee-app
+  acrName: myacr.azurecr.io
+  tag: $(Build.BuildId)
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+# ---------------- BUILD & ANALYZE ----------------
+- stage: Build_And_Analyze
+  displayName: Build and Sonar Analysis
+  jobs:
+  - job: JavaCI
+    displayName: Java CI Job
+    steps:
+    - checkout: self
+      displayName: Checkout Source Code
+
+    - task: SonarQubePrepare@5
+      displayName: Prepare SonarQube Analysis
+      inputs:
+        SonarQube: 'SonarQube-Service-Connection'
+        scannerMode: 'Maven'
+        projectKey: 'employee-app'
+        projectName: 'employee-app'
+
+    - task: Maven@3
+      displayName: Maven Build and Sonar Scan
+      inputs:
+        mavenPomFile: 'pom.xml'
+        goals: 'clean verify sonar:sonar'
+        jdkVersionOption: '1.17'
+
+    - task: SonarQubePublish@5
+      displayName: Publish SonarQube Quality Gate
+      inputs:
+        pollingTimeoutSec: '300'
+
+    - task: Docker@2
+      displayName: Build and Push Docker Image
+      inputs:
+        containerRegistry: 'ACR-Service-Connection'
+        repository: $(imageName)
+        command: buildAndPush
+        Dockerfile: '**/Dockerfile'
+        tags: |
+          $(tag)
+
+# ---------------- DEPLOY ----------------
+- stage: Deploy
+  displayName: Deploy to DEV Environment
+  dependsOn: Build_And_Analyze
+  condition: succeeded()
+  jobs:
+  - job: DeployAKS
+    displayName: Deploy to AKS
+    steps:
+    - task: KubernetesManifest@0
+      displayName: Apply Kubernetes Manifest
+      inputs:
+        action: deploy
+        kubernetesServiceConnection: 'AKS-Service-Connection'
+        namespace: dev
+        manifests: |
+          k8s/deployment.yml
+          k8s/service.yml
+        containers: |
+          $(acrName)/$(imageName):$(tag)
