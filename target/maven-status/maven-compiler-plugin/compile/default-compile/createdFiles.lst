@@ -1,5 +1,0 @@
-com\example\employeeapp\entity\Employee.class
-com\example\employeeapp\repository\EmployeeRepository.class
-com\example\employeeapp\controller\EmployeeController.class
-com\example\employeeapp\EmployeeApplication.class
-com\example\employeeapp\service\EmployeeService.class
