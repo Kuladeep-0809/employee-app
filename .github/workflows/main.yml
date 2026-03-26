@@ -31,10 +31,10 @@ jobs:
       run: |
         mvn clean verify sonar:sonar \
         -Dsonar.projectKey=Kuladeep-0809_employee-app \
-        -Dsonar.organization=Kuladeep-0809 \
+        -Dsonar.organization=kuladeep-0809 \
         -Dsonar.host.url=https://sonarcloud.io
 
-    # ✅ Quality Gate Check
+    # ✅ Quality Gate (optional but good)
     - name: SonarCloud Quality Gate
       uses: sonarsource/sonarqube-quality-gate-action@v1
       env:
@@ -60,7 +60,8 @@ jobs:
     environment: dev
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
 
     - name: Set up kubectl
       uses: azure/setup-kubectl@v3
